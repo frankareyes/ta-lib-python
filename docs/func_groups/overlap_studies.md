@@ -1,7 +1,12 @@
 # Overlap Studies Functions
+### ACCBANDS - Acceleration Bands
+```python
+upperband, middleband, lowerband = ACCBANDS(high, low, close, timeperiod=20)
+```
+
 ### BBANDS - Bollinger Bands
 ```python
-upperband, middleband, lowerband = BBANDS(close, timeperiod=5, nbdevup=2, nbdevdn=2, matype=0)
+upperband, middleband, lowerband = BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 ```
 
 ### DEMA - Double Exponential Moving Average
@@ -9,10 +14,20 @@ upperband, middleband, lowerband = BBANDS(close, timeperiod=5, nbdevup=2, nbdevd
 real = DEMA(close, timeperiod=30)
 ```
 
+### DONCHIAN - Donchian Channels
+```python
+upperband, middleband, lowerband = DONCHIAN(high, low, timeperiod=20)
+```
+
 ### EMA - Exponential Moving Average
 NOTE: The ``EMA`` function has an unstable period.  
 ```python
 real = EMA(close, timeperiod=30)
+```
+
+### HMA - Hull Moving Average
+```python
+real = HMA(close, timeperiod=20)
 ```
 
 ### HT_TRENDLINE - Hilbert Transform - Instantaneous Trendline
@@ -25,6 +40,11 @@ real = HT_TRENDLINE(close)
 NOTE: The ``KAMA`` function has an unstable period.  
 ```python
 real = KAMA(close, timeperiod=30)
+```
+
+### KC - Keltner Channels
+```python
+upperband, middleband, lowerband = KC(high, low, close, timeperiod=20, atrperiod=10, nbdev=2)
 ```
 
 ### MA - Moving average
@@ -53,6 +73,12 @@ real = MIDPOINT(close, timeperiod=14)
 real = MIDPRICE(high, low, timeperiod=14)
 ```
 
+### RMA - Wilder's Smoothed Moving Average
+NOTE: The ``RMA`` function has an unstable period.  
+```python
+real = RMA(close, timeperiod=30)
+```
+
 ### SAR - Parabolic SAR
 ```python
 real = SAR(high, low, acceleration=0, maximum=0)
@@ -66,6 +92,11 @@ real = SAREXT(high, low, startvalue=0, offsetonreverse=0, accelerationinitlong=0
 ### SMA - Simple Moving Average
 ```python
 real = SMA(close, timeperiod=30)
+```
+
+### SUPERTREND - SuperTrend
+```python
+supertrend, trend = SUPERTREND(high, low, close, timeperiod=10, multiplier=3)
 ```
 
 ### T3 - Triple Exponential Moving Average (T3)
@@ -84,11 +115,21 @@ real = TEMA(close, timeperiod=30)
 real = TRIMA(close, timeperiod=30)
 ```
 
+### VWMA - Volume Weighted Moving Average
+```python
+real = VWMA(close, volume, timeperiod=30)
+```
+
 ### WMA - Weighted Moving Average
 ```python
 real = WMA(close, timeperiod=30)
 ```
 
+### ZLEMA - Zero-Lag Exponential Moving Average
+```python
+real = ZLEMA(close, timeperiod=30)
+```
 
-[Documentation Index](../doc_index.html)
-[FLOAT_RIGHTAll Function Groups](../funcs.html)
+
+[Documentation Index](../doc_index.md)
+[FLOAT_RIGHTAll Function Groups](../funcs.md)

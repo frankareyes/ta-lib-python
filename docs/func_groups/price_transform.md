@@ -1,7 +1,18 @@
 # Price Transform Functions
+### AVGDEV - Average Deviation
+```python
+real = AVGDEV(close, timeperiod=14)
+```
+
 ### AVGPRICE - Average Price
 ```python
 real = AVGPRICE(open, high, low, close)
+```
+
+### HA - Heikin-Ashi Candles
+NOTE: The ``HA`` function has an unstable period.  
+```python
+haopen, hahigh, halow, haclose = HA(open, high, low, close)
 ```
 
 ### MEDPRICE - Median Price
@@ -20,5 +31,5 @@ real = WCLPRICE(high, low, close)
 ```
 
 
-[Documentation Index](../doc_index.html)
-[FLOAT_RIGHTAll Function Groups](../funcs.html)
+[Documentation Index](../doc_index.md)
+[FLOAT_RIGHTAll Function Groups](../funcs.md)

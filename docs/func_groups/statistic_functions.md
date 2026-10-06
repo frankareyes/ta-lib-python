@@ -29,6 +29,16 @@ real = LINEARREG_INTERCEPT(close, timeperiod=14)
 real = LINEARREG_SLOPE(close, timeperiod=14)
 ```
 
+### PERCENTILE - Percentile (nearest rank)
+```python
+real = PERCENTILE(close, timeperiod=30, percentile=50)
+```
+
+### PERCENTRANK - Percent Rank
+```python
+real = PERCENTRANK(close, timeperiod=100)
+```
+
 ### STDDEV - Standard Deviation
 ```python
 real = STDDEV(close, timeperiod=5, nbdev=1)
@@ -45,5 +55,5 @@ real = VAR(close, timeperiod=5, nbdev=1)
 ```
 
 
-[Documentation Index](../doc_index.html)
-[FLOAT_RIGHTAll Function Groups](../funcs.html)
+[Documentation Index](../doc_index.md)
+[FLOAT_RIGHTAll Function Groups](../funcs.md)

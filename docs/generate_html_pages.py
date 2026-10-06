@@ -13,13 +13,12 @@ To list available style names (at python prompt)
 # default, lovelace and xcode are "normal" styles
 """
 
-from __future__ import print_function
-
 import os
 import sys
 import talib
 
-import mistune.renderers
+import mistune
+
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters.html import HtmlFormatter
@@ -102,10 +101,7 @@ def get_doc_links():
         with open(html_file_path, 'r') as f:
             html = f.read()
     else:
-        if sys.version_info < (2, 8):
-            from urllib2 import urlopen
-        else:
-            from urllib.request import urlopen
+        from urllib.request import urlopen
 
         html = urlopen(tadoc_homepage).read()
         with open(html_file_path, 'wb') as f:
@@ -113,7 +109,7 @@ def get_doc_links():
 
     # find every link that's for an indicator and convert to absolute urls
     soup = BeautifulSoup(html, 'html.parser')
-    links = [a for a in soup.findAll('a') if 'indicator' in a['href']]
+    links = [a for a in soup.find_all('a') if 'indicator' in a['href']]
     ret = {}
     for a in links:
         url = ''.join([tadoc_homepage, a['href']])
@@ -187,8 +183,8 @@ def get_groups_markdown():
                 group_docs.append('Learn more about the %s at [tadoc.org](%s).  ' % (
                     f.info['display_name'], doc_links[func]))
 
-        group_docs.append('\n[Documentation Index](../doc_index.html)')
-        group_docs.append('[FLOAT_RIGHTAll Function Groups](../funcs.html)')
+        group_docs.append('\n[Documentation Index](../doc_index.md)')
+        group_docs.append('[FLOAT_RIGHTAll Function Groups](../funcs.md)')
 
         ret[slugify(group)] = '\n'.join(group_docs) + '\n'
     return ret
@@ -211,11 +207,11 @@ def get_markdown_file_paths():
 
 def _get_markdown_renderer():
     """Returns a function to convert a Markdown string into pygments-highlighted HTML"""
-    class PygmentsHighlighter(mistune.renderers.HTMLRenderer):
-        def block_code(self, code, lang=None):
-            if not lang:
+    class PygmentsHighlighter(mistune.HTMLRenderer):
+        def block_code(self, code, info=None):
+            if not info:
                 return '\n<pre><code>%s</code></pre>\n' % mistune.escape(code)
-            lexer = get_lexer_by_name(lang, stripall=True)
+            lexer = get_lexer_by_name(info, stripall=True)
             formatter = HtmlFormatter(classprefix='highlight ')
             return highlight(code, lexer, formatter)
     return mistune.Markdown(renderer=PygmentsHighlighter())

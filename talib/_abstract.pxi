@@ -1,7 +1,6 @@
 '''
 This file Copyright (c) 2013 Brian A Cappello <briancappello at gmail>
 '''
-import math
 import threading
 try:
     from collections import OrderedDict
@@ -15,41 +14,58 @@ cimport numpy as np
 cimport _ta_lib as lib
 # NOTE: _ta_check_success, MA_Type is defined in _common.pxi
 
+np.import_array() # Initialize the NumPy C API
 
 # lookup for TALIB input parameters which don't define expected price series inputs
-__INPUT_PRICE_SERIES_DEFAULTS = {'price':   'close',
-                                 'price0':  'high',
-                                 'price1':  'low',
-                                 'periods': 'periods', # only used by MAVP; not a price series!
-                                 }
+_INPUT_PRICE_SERIES_DEFAULTS = {'price':   'close',
+                                'price0':  'high',
+                                'price1':  'low',
+                                'periods': 'periods', # only used by MAVP; not a price series!
+                                }
 
-__INPUT_ARRAYS_TYPES = [dict]
-__ARRAY_TYPES = [np.ndarray]
+_INPUT_ARRAYS_TYPES = [dict]
+_ARRAY_TYPES = [np.ndarray]
 
 # allow use of pandas.DataFrame for input arrays
 try:
     import pandas
-    __INPUT_ARRAYS_TYPES.append(pandas.DataFrame)
-    __ARRAY_TYPES.append(pandas.Series)
-    __PANDAS_DATAFRAME = pandas.DataFrame
-    __PANDAS_SERIES = pandas.Series
-except ImportError:
-    __PANDAS_DATAFRAME = None
-    __PANDAS_SERIES = None
+    _INPUT_ARRAYS_TYPES.append(pandas.DataFrame)
+    _ARRAY_TYPES.append(pandas.Series)
+    _PANDAS_DATAFRAME = pandas.DataFrame
+    _PANDAS_SERIES = pandas.Series
+except ImportError as import_error:
+    try:
+        if not isinstance(import_error, ModuleNotFoundError) or import_error.name != 'pandas':
+            # Propagate the error when the module exists but failed to be imported.
+            raise import_error
+    # `ModuleNotFoundError` was introduced in Python 3.6.
+    except NameError:
+        pass
+
+    _PANDAS_DATAFRAME = None
+    _PANDAS_SERIES = None
 
 # allow use of polars.DataFrame for input arrays
 try:
     import polars
-    __INPUT_ARRAYS_TYPES.append(polars.DataFrame)
-    __ARRAY_TYPES.append(polars.Series)
-    __POLARS_DATAFRAME = polars.DataFrame
-    __POLARS_SERIES = polars.Series
-except ImportError:
-    __POLARS_DATAFRAME = None
-    __POLARS_SERIES = None
+    _INPUT_ARRAYS_TYPES.append(polars.DataFrame)
+    _ARRAY_TYPES.append(polars.Series)
+    _POLARS_DATAFRAME = polars.DataFrame
+    _POLARS_SERIES = polars.Series
+except ImportError as import_error:
+    try:
+        if not isinstance(import_error, ModuleNotFoundError) or import_error.name != 'polars':
+            # Propagate the error when the module exists but failed to be imported.
+            raise import_error
+    # `ModuleNotFoundError` was introduced in Python 3.6.
+    except NameError:
+        pass
 
-__INPUT_ARRAYS_TYPES = tuple(__INPUT_ARRAYS_TYPES)
-__ARRAY_TYPES = tuple(__ARRAY_TYPES)
+    _POLARS_DATAFRAME = None
+    _POLARS_SERIES = None
+
+_INPUT_ARRAYS_TYPES = tuple(_INPUT_ARRAYS_TYPES)
+_ARRAY_TYPES = tuple(_ARRAY_TYPES)
 
 
 if sys.version >= '3':
@@ -88,7 +104,7 @@ class Function(object):
     - set_function_args([input_arrays,] [param_args_andor_kwargs])
 
     Documentation for param_args_andor_kwargs can be seen by printing the
-    Function instance or programatically via the info, input_names and
+    Function instance or programmatically via the info, input_names and
     parameters properties.
 
     ----- result-returning functions -----
@@ -131,7 +147,7 @@ class Function(object):
                 info = _ta_getInputParameterInfo(self.__name, i)
                 input_name = info['name']
                 if info['price_series'] is None:
-                    info['price_series'] = __INPUT_PRICE_SERIES_DEFAULTS[input_name]
+                    info['price_series'] = _INPUT_PRICE_SERIES_DEFAULTS[input_name]
                 local.input_names[input_name] = info
             local.info['input_names'] = self.input_names
 
@@ -201,8 +217,8 @@ class Function(object):
         Returns a copy of the dict of input arrays in use.
         """
         local = self.__local
-        if __POLARS_DATAFRAME is not None \
-            and isinstance(local.input_arrays, __POLARS_DATAFRAME):
+        if _POLARS_DATAFRAME is not None \
+            and isinstance(local.input_arrays, _POLARS_DATAFRAME):
             return local.input_arrays.clone()
         else:
             return local.input_arrays.copy()
@@ -233,11 +249,11 @@ class Function(object):
                 return False
         """
         local = self.__local
-        if isinstance(input_arrays, __INPUT_ARRAYS_TYPES):
+        if isinstance(input_arrays, _INPUT_ARRAYS_TYPES):
             missing_keys = []
             for key in self.__input_price_series_names():
-                if __POLARS_DATAFRAME is not None \
-                    and isinstance(input_arrays, __POLARS_DATAFRAME):
+                if _POLARS_DATAFRAME is not None \
+                    and isinstance(input_arrays, _POLARS_DATAFRAME):
                     missing = key not in input_arrays.columns
                 else:
                     missing = key not in input_arrays
@@ -360,22 +376,22 @@ class Function(object):
         ret = local.outputs.values()
         if not isinstance(ret, list):
             ret = list(ret)
-        if __PANDAS_DATAFRAME is not None and \
-                isinstance(local.input_arrays, __PANDAS_DATAFRAME):
+        if _PANDAS_DATAFRAME is not None and \
+                isinstance(local.input_arrays, _PANDAS_DATAFRAME):
             index = local.input_arrays.index
             if len(ret) == 1:
-                return __PANDAS_SERIES(ret[0], index=index)
+                return _PANDAS_SERIES(ret[0], index=index)
             else:
-                return __PANDAS_DATAFRAME(numpy.column_stack(ret),
-                                          index=index,
-                                          columns=self.output_names)
-        elif __POLARS_DATAFRAME is not None and \
-                isinstance(local.input_arrays, __POLARS_DATAFRAME):
+                return _PANDAS_DATAFRAME(numpy.column_stack(ret),
+                                         index=index,
+                                         columns=self.output_names)
+        elif _POLARS_DATAFRAME is not None and \
+                isinstance(local.input_arrays, _POLARS_DATAFRAME):
             if len(ret) == 1:
-                return __POLARS_SERIES(ret[0])
+                return _POLARS_SERIES(ret[0])
             else:
-                return __POLARS_DATAFRAME(numpy.column_stack(ret),
-                                          columns=self.output_names)
+                return _POLARS_DATAFRAME(numpy.column_stack(ret),
+                                         schema=self.output_names)
         else:
             return ret[0] if len(ret) == 1 else ret
 
@@ -409,9 +425,9 @@ class Function(object):
         args = list(args)
         input_arrays = {}
         input_price_series_names = self.__input_price_series_names()
-        if args and not isinstance(args[0], __INPUT_ARRAYS_TYPES):
+        if args and not isinstance(args[0], _INPUT_ARRAYS_TYPES):
             for i, arg in enumerate(args):
-                if not isinstance(arg, __ARRAY_TYPES):
+                if not isinstance(arg, _ARRAY_TYPES):
                     break
 
                 try:
@@ -422,11 +438,11 @@ class Function(object):
                         ', '.join(input_price_series_names))
                     raise TypeError(msg)
 
-        if __PANDAS_DATAFRAME is not None \
-                and isinstance(local.input_arrays, __PANDAS_DATAFRAME):
+        if _PANDAS_DATAFRAME is not None \
+                and isinstance(local.input_arrays, _PANDAS_DATAFRAME):
             no_existing_input_arrays = local.input_arrays.empty
-        elif __POLARS_DATAFRAME is not None \
-                and isinstance(local.input_arrays, __POLARS_DATAFRAME):
+        elif _POLARS_DATAFRAME is not None \
+                and isinstance(local.input_arrays, _POLARS_DATAFRAME):
             no_existing_input_arrays = local.input_arrays.is_empty()
         else:
             no_existing_input_arrays = not bool(local.input_arrays)
@@ -435,7 +451,7 @@ class Function(object):
             self.set_input_arrays(input_arrays)
             args = args[len(input_arrays):]
         elif len(input_arrays) or (no_existing_input_arrays and (
-                not len(args) or not isinstance(args[0], __INPUT_ARRAYS_TYPES))):
+                not len(args) or not isinstance(args[0], _INPUT_ARRAYS_TYPES))):
             msg = 'Not enough price arguments: expected %d (%s)' % (
                 len(input_price_series_names),
                 ', '.join(input_price_series_names))
@@ -465,7 +481,7 @@ class Function(object):
             if isinstance(price_series, list): # TALIB-supplied input names
                 for name in price_series:
                     input_price_series_names.append(name)
-            else: # name came from __INPUT_PRICE_SERIES_DEFAULTS
+            else: # name came from _INPUT_PRICE_SERIES_DEFAULTS
                 input_price_series_names.append(price_series)
         return input_price_series_names
 
@@ -477,11 +493,11 @@ class Function(object):
         args = []
         for price_series in input_price_series_names:
             series = local.input_arrays[price_series]
-            if __PANDAS_SERIES is not None and \
-                    isinstance(series, __PANDAS_SERIES):
+            if _PANDAS_SERIES is not None and \
+                    isinstance(series, _PANDAS_SERIES):
                 series = series.values.astype(float)
-            elif __POLARS_SERIES is not None and \
-                    isinstance(series, __POLARS_SERIES):
+            elif _POLARS_SERIES is not None and \
+                    isinstance(series, _POLARS_SERIES):
                 series = series.to_numpy().astype(float)
             args.append(series)
         for opt_input in local.opt_inputs:
@@ -575,30 +591,23 @@ def __get_flags(int flag, dict flags_lookup_dict):
     This function returns the flags from flag found in the provided
     flags_lookup_dict.
     """
-    value_range = flags_lookup_dict.keys()
-    if not isinstance(value_range, list):
-        value_range = list(value_range)
-    min_int = int(math.log(min(value_range), 2))
-    max_int = int(math.log(max(value_range), 2))
-
-    # if the flag we got is out-of-range, it just means no extra info provided
-    if flag < 1 or flag > 2**max_int:
+    # A bit with no description means the installed ta-lib is newer than this
+    # build knows about; skip it rather than raising.
+    if flag < 1:
         return None
-
-    # In this loop, i is essentially the bit-position, which represents an
-    # input from flags_lookup_dict. We loop through as many flags_lookup_dict
-    # bit-positions as we need to check, bitwise-ANDing each with flag for a hit.
-    ret = []
-    for i in xrange(min_int, max_int+1):
-        if 2**i & flag:
-            ret.append(flags_lookup_dict[2**i])
-    return ret
+    return [description
+            for bit, description in sorted(flags_lookup_dict.items())
+            if bit & flag]
 
 TA_FUNC_FLAGS = {
+    1: 'A period of 1 performs no smoothing',
     16777216: 'Output scale same as input',
+    33554432: 'Function has a streaming API',
     67108864: 'Output is over volume',
     134217728: 'Function has an unstable period',
-    268435456: 'Output is a candlestick'
+    268435456: 'Output is a candlestick',
+    536870912: 'Output is path-dependent',
+    1073741824: 'Output can be NaN or infinite',
 }
 
 # when flag is 0, the function (should) work on any reasonable input ndarray
@@ -625,7 +634,8 @@ TA_OUTPUT_FLAGS = {
     512: 'Output can be negative',
     1024: 'Output can be zero',
     2048: 'Values represent an upper limit',
-    4096: 'Values represent a lower limit'
+    4096: 'Values represent a lower limit',
+    8192: 'Output is optional (nullable)',
 }
 
 def _ta_getFuncInfo(char *function_name):
@@ -633,7 +643,7 @@ def _ta_getFuncInfo(char *function_name):
     Returns the info dict for the function. It has the following keys: name,
     group, help, flags, num_inputs, num_opt_inputs and num_outputs.
     """
-    cdef lib.TA_FuncInfo *info
+    cdef const lib.TA_FuncInfo *info
     retCode = lib.TA_GetFuncInfo(__ta_getFuncHandle(function_name), &info)
     _ta_check_success('TA_GetFuncInfo', retCode)
 
@@ -652,7 +662,7 @@ def _ta_getInputParameterInfo(char *function_name, int idx):
     Returns the function's input info dict for the given index. It has two
     keys: name and flags.
     """
-    cdef lib.TA_InputParameterInfo *info
+    cdef const lib.TA_InputParameterInfo *info
     retCode = lib.TA_GetInputParameterInfo(__ta_getFuncHandle(function_name), idx, &info)
     _ta_check_success('TA_GetInputParameterInfo', retCode)
 
@@ -673,15 +683,13 @@ def _ta_getOptInputParameterInfo(char *function_name, int idx):
     Returns the function's opt_input info dict for the given index. It has the
     following keys: name, display_name, type, help, default_value and value.
     """
-    cdef lib.TA_OptInputParameterInfo *info
+    cdef const lib.TA_OptInputParameterInfo *info
     retCode = lib.TA_GetOptInputParameterInfo(__ta_getFuncHandle(function_name), idx, &info)
     _ta_check_success('TA_GetOptInputParameterInfo', retCode)
 
     name = bytes2str(info.paramName)
     name = name[len('optIn'):].lower()
-    default_value = info.defaultValue
-    if default_value % 1 == 0:
-        default_value = int(default_value)
+    default_value = int(info.defaultValue) if info.type > 1 else info.defaultValue
 
     return {
         'name': name,
@@ -697,7 +705,7 @@ def _ta_getOutputParameterInfo(char *function_name, int idx):
     Returns the function's output info dict for the given index. It has two
     keys: name and flags.
     """
-    cdef lib.TA_OutputParameterInfo *info
+    cdef const lib.TA_OutputParameterInfo *info
     retCode = lib.TA_GetOutputParameterInfo(__ta_getFuncHandle(function_name), idx, &info)
     _ta_check_success('TA_GetOutputParameterInfo', retCode)
 
@@ -739,13 +747,14 @@ def _get_defaults_and_docs(func_info):
         docs.append('    %s: %s' % (param, params[param]))
         func_args.append('[%s=%s]' % (param, params[param]))
         defaults[param] = params[param]
-        if param == 'matype':
+        if param.endswith('matype'):
             docs[-1] = ' '.join([docs[-1], '(%s)' % MA_Type[params[param]]])
 
     outputs = func_info['output_names']
+    candlestick = 'Output is a candlestick' in (func_info['function_flags'] or [])
     docs.append('Outputs:')
     for output in outputs:
-        if output == 'integer':
+        if output == 'integer' and candlestick:
             output = 'integer (values are -100, 0 or 100)'
         docs.append('    %s' % output)
 
@@ -764,11 +773,11 @@ def _get_defaults_and_docs(func_info):
 # - Getting TALIB handle and paramholder pointers
 # - Setting TALIB paramholder optInput values and calling the lookback function
 
-cdef lib.TA_FuncHandle*  __ta_getFuncHandle(char *function_name):
+cdef const lib.TA_FuncHandle*  __ta_getFuncHandle(char *function_name):
     """
     Returns a pointer to a function handle for the given function name
     """
-    cdef lib.TA_FuncHandle *handle
+    cdef const lib.TA_FuncHandle *handle
     _ta_check_success('TA_GetFuncHandle', lib.TA_GetFuncHandle(function_name, &handle))
     return handle
 
